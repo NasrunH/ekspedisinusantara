@@ -71,12 +71,10 @@ class ShipmentController extends Controller
             DB::beginTransaction();
 
             // Prepare data - weight is converted from kg to grams (integer)
-            $data = $request->all();
+            $data = $request->except(['_token']);
             $data['weight'] = (int)($request->weight * 1000); // Convert kg to grams as integer
             
-            // Set tanggal dengan format yang benar untuk date type
-            $data['created_at'] = now()->format('Y-m-d');
-            $data['updated_at'] = now()->format('Y-m-d');
+            // Laravel akan otomatis mengatur created_at dan updated_at dengan timestamp lengkap
 
             $shipment = Shipment::create($data);
 
@@ -125,6 +123,20 @@ class ShipmentController extends Controller
             'weight' => 'required|numeric|min:0.01',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,in_transit,delivered',
+        ], [
+            'tracking_number.required' => 'Nomor resi wajib diisi.',
+            'tracking_number.unique' => 'Nomor resi sudah digunakan.',
+            'sender_name.required' => 'Nama pengirim wajib diisi.',
+            'sender_address.required' => 'Alamat pengirim wajib diisi.',
+            'sender_phone.required' => 'Telepon pengirim wajib diisi.',
+            'recipient_name.required' => 'Nama penerima wajib diisi.',
+            'recipient_address.required' => 'Alamat penerima wajib diisi.',
+            'recipient_phone.required' => 'Telepon penerima wajib diisi.',
+            'weight.required' => 'Berat barang wajib diisi.',
+            'weight.numeric' => 'Berat harus berupa angka.',
+            'weight.min' => 'Berat minimal 0.01 kg.',
+            'status.required' => 'Status wajib dipilih.',
+            'status.in' => 'Status tidak valid.',
         ]);
 
         if ($validator->fails()) {
@@ -137,9 +149,10 @@ class ShipmentController extends Controller
             DB::beginTransaction();
 
             // Prepare data - weight is converted from kg to grams (integer)
-            $data = $request->all();
+            $data = $request->except(['_token', '_method']);
             $data['weight'] = (int)($request->weight * 1000); // Convert kg to grams as integer
-            $data['updated_at'] = now()->format('Y-m-d');
+            
+            // Laravel akan otomatis mengupdate updated_at dengan timestamp lengkap
 
             $shipment->update($data);
 
@@ -210,8 +223,8 @@ class ShipmentController extends Controller
                 'sender_name' => $shipment->sender_name,
                 'recipient_name' => $shipment->recipient_name,
                 'weight' => number_format($shipment->weight / 1000, 2), // Convert grams to kg
-                'created_at' => $shipment->created_at,
-                'updated_at' => $shipment->updated_at,
+                'created_at' => $shipment->formatted_created_at,
+                'updated_at' => $shipment->formatted_updated_at,
             ]
         ]);
     }
