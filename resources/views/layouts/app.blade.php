@@ -61,7 +61,7 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url('/') }}">
                 <i class="fas fa-shipping-fast me-2"></i>
-                Ekspedisi Pengiriman
+                Ekspedisi Nusantara
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -89,7 +89,7 @@
                     <li class="nav-item">
                         <span class="navbar-text">
                             <i class="fas fa-database me-1"></i>
-                            MySQL + PostgreSQL
+                            MySQL
                         </span>
                     </li>
                 </ul>
