@@ -41,11 +41,21 @@ return [
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
+            'strict' => false, // Changed to false for Railway compatibility
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_EMULATE_PREPARES => true, // Added for better compatibility
             ]) : [],
+            'modes' => [
+                // Disable strict mode for Railway compatibility
+                //'ONLY_FULL_GROUP_BY',
+                //'STRICT_TRANS_TABLES',
+                //'NO_ZERO_IN_DATE',
+                //'NO_ZERO_DATE',
+                //'ERROR_FOR_DIVISION_BY_ZERO',
+                //'NO_ENGINE_SUBSTITUTION',
+            ],
         ],
 
         'pgsql' => [
@@ -61,6 +71,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'options' => [
+                PDO::ATTR_PERSISTENT => false,
+            ],
         ],
 
         'sqlsrv' => [

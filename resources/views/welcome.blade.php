@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Beranda - Sistem Ekspedisi Pengiriman')
+@section('title', 'Beranda - Sistem Pengiriman')
 
 @section('content')
 <div class="row">
@@ -12,10 +12,10 @@
                     <i class="fas fa-shipping-fast text-primary" style="font-size: 4rem;"></i>
                 </div>
                 <h1 class="display-5 fw-bold text-primary mb-3">
-                    Sistem Ekspedisi Pengiriman
+                    Sistem Pengiriman
                 </h1>
                 <p class="lead text-muted mb-4">
-                    Aplikasi simulasi pengiriman barang dengan replikasi database MySQL dan PostgreSQL
+                    Aplikasi untuk memantau dan mengelola pengiriman barang secara efisien.
                 </p>
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                     <a href="{{ route('shipments.index') }}" class="btn btn-primary btn-lg me-md-2">
@@ -36,11 +36,11 @@
                 <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="mb-3">
-                            <i class="fas fa-database text-info" style="font-size: 2.5rem;"></i>
+                            <i class="fas fa-cogs text-info" style="font-size: 2.5rem;"></i>
                         </div>
-                        <h5 class="card-title">Dual Database</h5>
+                        <h5 class="card-title">Pengelolaan Data</h5>
                         <p class="card-text text-muted">
-                            Menggunakan MySQL sebagai database utama dan PostgreSQL sebagai database sekunder dengan replikasi otomatis.
+                            Sistem yang handal untuk mengelola data pengiriman secara otomatis.
                         </p>
                     </div>
                 </div>
@@ -52,9 +52,9 @@
                         <div class="mb-3">
                             <i class="fas fa-sync-alt text-warning" style="font-size: 2.5rem;"></i>
                         </div>
-                        <h5 class="card-title">Auto Sync</h5>
+                        <h5 class="card-title">Sinkronisasi Otomatis</h5>
                         <p class="card-text text-muted">
-                            Data secara otomatis tersinkronisasi antara kedua database setiap kali ada perubahan data.
+                            Data tersinkronisasi secara otomatis setiap kali ada perubahan.
                         </p>
                     </div>
                 </div>
@@ -66,9 +66,9 @@
                         <div class="mb-3">
                             <i class="fas fa-mobile-alt text-success" style="font-size: 2.5rem;"></i>
                         </div>
-                        <h5 class="card-title">Multi Device</h5>
+                        <h5 class="card-title">Akses Multi Perangkat</h5>
                         <p class="card-text text-muted">
-                            Dapat diakses dari berbagai perangkat dengan tampilan yang responsif dan user-friendly.
+                            Dapat diakses dari berbagai perangkat dengan tampilan responsif.
                         </p>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
             <div class="card-header">
                 <h5 class="card-title mb-0">
                     <i class="fas fa-chart-bar me-2"></i>
-                    Statistik Cepat
+                    Statistik Pengiriman
                 </h5>
             </div>
             <div class="card-body">

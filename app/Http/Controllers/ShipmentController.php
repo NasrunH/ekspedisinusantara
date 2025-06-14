@@ -6,6 +6,7 @@ use App\Models\Shipment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class ShipmentController extends Controller
 {
@@ -69,13 +70,11 @@ class ShipmentController extends Controller
         try {
             DB::beginTransaction();
 
-            // Konversi weight dari kg ke gram
-            $data = $request->all();
-            $data['weight'] = $request->weight * 1000; // Convert kg to grams
+            // Prepare data - weight is converted from kg to grams (integer)
+            $data = $request->except(['_token']);
+            $data['weight'] = (int)($request->weight * 1000); // Convert kg to grams as integer
             
-            // Set tanggal dengan format yang benar
-            $data['created_at'] = now()->format('Y-m-d');
-            $data['updated_at'] = now()->format('Y-m-d');
+            // Laravel akan otomatis mengatur created_at dan updated_at dengan timestamp lengkap
 
             $shipment = Shipment::create($data);
 
@@ -124,6 +123,20 @@ class ShipmentController extends Controller
             'weight' => 'required|numeric|min:0.01',
             'description' => 'nullable|string',
             'status' => 'required|in:pending,in_transit,delivered',
+        ], [
+            'tracking_number.required' => 'Nomor resi wajib diisi.',
+            'tracking_number.unique' => 'Nomor resi sudah digunakan.',
+            'sender_name.required' => 'Nama pengirim wajib diisi.',
+            'sender_address.required' => 'Alamat pengirim wajib diisi.',
+            'sender_phone.required' => 'Telepon pengirim wajib diisi.',
+            'recipient_name.required' => 'Nama penerima wajib diisi.',
+            'recipient_address.required' => 'Alamat penerima wajib diisi.',
+            'recipient_phone.required' => 'Telepon penerima wajib diisi.',
+            'weight.required' => 'Berat barang wajib diisi.',
+            'weight.numeric' => 'Berat harus berupa angka.',
+            'weight.min' => 'Berat minimal 0.01 kg.',
+            'status.required' => 'Status wajib dipilih.',
+            'status.in' => 'Status tidak valid.',
         ]);
 
         if ($validator->fails()) {
@@ -135,10 +148,11 @@ class ShipmentController extends Controller
         try {
             DB::beginTransaction();
 
-            // Konversi weight dari kg ke gram
-            $data = $request->all();
-            $data['weight'] = $request->weight * 1000; // Convert kg to grams
-            $data['updated_at'] = now()->format('Y-m-d');
+            // Prepare data - weight is converted from kg to grams (integer)
+            $data = $request->except(['_token', '_method']);
+            $data['weight'] = (int)($request->weight * 1000); // Convert kg to grams as integer
+            
+            // Laravel akan otomatis mengupdate updated_at dengan timestamp lengkap
 
             $shipment->update($data);
 
@@ -208,58 +222,114 @@ class ShipmentController extends Controller
                 'status_label' => $shipment->status_label,
                 'sender_name' => $shipment->sender_name,
                 'recipient_name' => $shipment->recipient_name,
-                'weight' => number_format($shipment->weight / 1000, 2),
-                'created_at' => $shipment->created_at,
-                'updated_at' => $shipment->updated_at,
+                'weight' => number_format($shipment->weight / 1000, 2), // Convert grams to kg
+                'created_at' => $shipment->formatted_created_at,
+                'updated_at' => $shipment->formatted_updated_at,
             ]
         ]);
     }
 
     /**
-     * Sync data between databases
+     * Sync data between databases - UPDATED FOR RAILWAY STRUCTURE
      */
-    public function syncDatabases()
+    public function syncDatabases(Request $request)
     {
         try {
-            $deviceName = config('app.device_name', 'device_1');
-            
-            if ($deviceName === 'device_1') {
-                // Sync MySQL to PostgreSQL
-                $mysqlShipments = DB::connection('mysql')->table('shipments')->get();
-                
-                foreach ($mysqlShipments as $shipment) {
-                    DB::connection('pgsql')->table('shipments')->updateOrInsert(
-                        ['id' => $shipment->id],
-                        (array) $shipment
-                    );
-                }
-                
+            // Log untuk debugging
+            Log::info('Sync request received', [
+                'method' => $request->method(),
+                'headers' => $request->headers->all(),
+                'is_ajax' => $request->ajax()
+            ]);
+
+            // Test koneksi MySQL
+            try {
+                $mysqlTest = DB::connection('mysql')->select('SELECT 1 as test');
+                Log::info('MySQL connection test passed');
+            } catch (\Exception $e) {
+                Log::error('MySQL connection failed: ' . $e->getMessage());
                 return response()->json([
-                    'success' => true,
-                    'message' => 'Sinkronisasi MySQL ke PostgreSQL berhasil',
-                    'synced_records' => $mysqlShipments->count()
-                ]);
-            } else {
-                // Sync PostgreSQL to MySQL
-                $postgresShipments = DB::connection('pgsql')->table('shipments')->get();
-                
-                foreach ($postgresShipments as $shipment) {
-                    DB::connection('mysql_secondary')->table('shipments')->updateOrInsert(
-                        ['id' => $shipment->id],
-                        (array) $shipment
-                    );
-                }
-                
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Sinkronisasi PostgreSQL ke MySQL berhasil',
-                    'synced_records' => $postgresShipments->count()
-                ]);
+                    'success' => false,
+                    'message' => 'Koneksi MySQL gagal: ' . $e->getMessage()
+                ], 500);
             }
+
+            // Test koneksi PostgreSQL
+            try {
+                $pgsqlTest = DB::connection('pgsql')->select('SELECT 1 as test');
+                Log::info('PostgreSQL connection test passed');
+            } catch (\Exception $e) {
+                Log::error('PostgreSQL connection failed: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Koneksi PostgreSQL gagal: ' . $e->getMessage()
+                ], 500);
+            }
+
+            // Ambil data dari MySQL
+            $mysqlShipments = DB::connection('mysql')->table('shipments')->get();
+            Log::info('MySQL data retrieved', ['count' => $mysqlShipments->count()]);
+
+            $syncCount = 0;
+            $errors = [];
+
+            // Sinkronisasi ke PostgreSQL
+            foreach ($mysqlShipments as $shipment) {
+                try {
+                    $shipmentArray = (array) $shipment;
+                    
+                    // Cek apakah record sudah ada
+                    $exists = DB::connection('pgsql')
+                        ->table('shipments')
+                        ->where('id', $shipment->id)
+                        ->exists();
+                    
+                    if ($exists) {
+                        // Update
+                        DB::connection('pgsql')
+                            ->table('shipments')
+                            ->where('id', $shipment->id)
+                            ->update($shipmentArray);
+                    } else {
+                        // Insert
+                        DB::connection('pgsql')
+                            ->table('shipments')
+                            ->insert($shipmentArray);
+                    }
+                    
+                    $syncCount++;
+                    Log::info('Synced record', ['id' => $shipment->id]);
+                    
+                } catch (\Exception $e) {
+                    $error = "Error sync ID {$shipment->id}: " . $e->getMessage();
+                    $errors[] = $error;
+                    Log::error($error);
+                }
+            }
+
+            $response = [
+                'success' => true,
+                'message' => 'Sinkronisasi berhasil',
+                'synced_records' => $syncCount,
+                'total_records' => $mysqlShipments->count(),
+                'device' => env('DEVICE_NAME', 'unknown')
+            ];
+
+            if (!empty($errors)) {
+                $response['warnings'] = $errors;
+            }
+
+            Log::info('Sync completed', $response);
+            return response()->json($response);
+
         } catch (\Exception $e) {
+            Log::error('Sync failed with exception: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal sinkronisasi database: ' . $e->getMessage()
+                'message' => 'Error: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -269,7 +339,11 @@ class ShipmentController extends Controller
      */
     private function getNextId()
     {
-        $lastShipment = Shipment::orderBy('id', 'desc')->first();
-        return $lastShipment ? $lastShipment->id + 1 : 1;
+        try {
+            $lastShipment = Shipment::orderBy('id', 'desc')->first();
+            return $lastShipment ? $lastShipment->id + 1 : 1;
+        } catch (\Exception $e) {
+            return 1;
+        }
     }
 }

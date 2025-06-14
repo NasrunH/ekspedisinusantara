@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        //
+        // Jika masih ada masalah CSRF, uncomment baris ini:
+        // '/api/sync-databases',
     ];
 }

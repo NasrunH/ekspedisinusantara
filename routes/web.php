@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ShipmentController;
+use App\Http\Controllers\DatabaseTestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,6 +17,13 @@ Route::get('/', function () {
 // Shipment routes
 Route::resource('shipments', ShipmentController::class);
 
-// API routes untuk tracking
+// API routes
 Route::get('/api/track', [ShipmentController::class, 'track'])->name('api.track');
-Route::post('/api/sync-databases', [ShipmentController::class, 'syncDatabases'])->name('api.sync');
+
+// Sync route dengan middleware web
+Route::middleware(['web'])->group(function () {
+    Route::post('/api/sync-databases', [ShipmentController::class, 'syncDatabases'])->name('api.sync');
+});
+
+// Database test route
+Route::get('/test-db', [DatabaseTestController::class, 'testConnections']);

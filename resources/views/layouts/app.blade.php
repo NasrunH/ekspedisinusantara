@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sistem Ekspedisi Pengiriman')</title>
     
     <!-- Bootstrap CSS -->
@@ -60,7 +61,7 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url('/') }}">
                 <i class="fas fa-shipping-fast me-2"></i>
-                Ekspedisi Pengiriman
+                Ekspedisi Nusantara
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -88,7 +89,7 @@
                     <li class="nav-item">
                         <span class="navbar-text">
                             <i class="fas fa-database me-1"></i>
-                            MySQL + PostgreSQL
+                            MySQL
                         </span>
                     </li>
                 </ul>
